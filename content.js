@@ -52,7 +52,7 @@
         </div>
 
         <div class="jarvis-footer">
-          ALT + J &nbsp; • &nbsp; VOICE ENABLED
+          ALT + J &nbsp; • &nbsp; JARVIS ONLINE
         </div>
 
       </div>
@@ -62,14 +62,9 @@
 
   document.documentElement.appendChild(root);
 
-  const messages =
-    root.querySelector("#jarvis-messages");
-
-  const input =
-    root.querySelector("#jarvis-input");
-
-  const status =
-    root.querySelector("#jarvis-status");
+  const messages = root.querySelector("#jarvis-messages");
+  const input = root.querySelector("#jarvis-input");
+  const status = root.querySelector("#jarvis-status");
 
   function escapeHTML(text) {
     return String(text).replace(
@@ -85,9 +80,7 @@
   }
 
   function addMessage(who, text) {
-
-    const message =
-      document.createElement("div");
+    const message = document.createElement("div");
 
     message.className = "jarvis-msg";
 
@@ -102,56 +95,133 @@
     `;
 
     messages.appendChild(message);
-
-    messages.scrollTop =
-      messages.scrollHeight;
+    messages.scrollTop = messages.scrollHeight;
   }
 
-  function speak(text) {
+  /*
+    JARVIS voice.
 
-    chrome.storage.local.get(
-      ["voice"],
-      data => {
+    Fish Audio will be connected in the next step.
+    For now, browser speech remains as a fallback.
+  */
 
-        const utterance =
-          new SpeechSynthesisUtterance(text);
+  async function speak(text) {
 
-        /*
-          Slightly lower pitch and slower
-          speed for a futuristic assistant feel.
-        */
+    const settings = await chrome.storage.local.get([
+      "fishApiKey",
+      "fishVoiceId"
+    ]);
 
-        utterance.rate = 0.92;
-        utterance.pitch = 0.82;
-        utterance.volume = 1;
+    /*
+      If a Fish Audio key and voice are configured,
+      use Fish Audio.
+    */
 
-        const voices =
-          speechSynthesis.getVoices();
+    if (settings.fishApiKey && settings.fishVoiceId) {
 
-        const selected =
-          voices.find(
-            voice => voice.name === data.voice
+      try {
+
+        status.textContent = "SPEAKING";
+
+        const response = await fetch(
+          "https://api.fish.audio/v1/tts",
+          {
+            method: "POST",
+
+            headers: {
+              "Authorization":
+                `Bearer ${settings.fishApiKey}`,
+
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              text: text,
+              reference_id:
+                settings.fishVoiceId,
+
+              format: "mp3",
+
+              mp3_bitrate: 128,
+
+              latency: "normal"
+            })
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Fish Audio error ${response.status}`
           );
-
-        if (selected) {
-          utterance.voice = selected;
-        } else {
-
-          const british =
-            voices.find(
-              voice =>
-                /^en-GB/i.test(voice.lang)
-            );
-
-          if (british)
-            utterance.voice = british;
         }
 
-        speechSynthesis.cancel();
+        const audioBlob =
+          await response.blob();
 
-        speechSynthesis.speak(utterance);
+        const audioUrl =
+          URL.createObjectURL(audioBlob);
+
+        const audio =
+          new Audio(audioUrl);
+
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          status.textContent = "STANDBY";
+        };
+
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl);
+          status.textContent = "STANDBY";
+        };
+
+        await audio.play();
+
+        return;
+
+      } catch (error) {
+
+        console.warn(
+          "Fish Audio failed:",
+          error
+        );
+
+        status.textContent =
+          "VOICE FALLBACK";
       }
-    );
+    }
+
+    /*
+      Browser voice fallback.
+    */
+
+    const utterance =
+      new SpeechSynthesisUtterance(text);
+
+    utterance.rate = 0.92;
+    utterance.pitch = 0.82;
+    utterance.volume = 1;
+
+    const voices =
+      speechSynthesis.getVoices();
+
+    const british =
+      voices.find(
+        voice =>
+          /^en-GB/i.test(voice.lang)
+      );
+
+    if (british) {
+      utterance.voice = british;
+    }
+
+    speechSynthesis.cancel();
+
+    speechSynthesis.speak(utterance);
+
+    utterance.onend = () => {
+      status.textContent = "STANDBY";
+    };
   }
 
   function toggleJarvis() {
@@ -167,7 +237,10 @@
         const greeting =
           "Good evening. All systems are online. How may I assist you?";
 
-        addMessage("JARVIS", greeting);
+        addMessage(
+          "JARVIS",
+          greeting
+        );
 
         speak(greeting);
       }
@@ -237,24 +310,20 @@
 
     text = text.trim();
 
-    if (!text)
-      return;
+    if (!text) return;
 
     addMessage("YOU", text);
 
     input.value = "";
 
-    status.textContent =
-      "PROCESSING";
+    status.textContent = "PROCESSING";
 
     /*
       Website commands.
     */
 
     const openCommand =
-      text.match(
-        /^open\s+(.+)$/i
-      );
+      text.match(/^open\s+(.+)$/i);
 
     if (openCommand) {
 
@@ -266,18 +335,18 @@
       const reply =
         `Certainly. Opening ${target}.`;
 
-      addMessage("JARVIS", reply);
+      addMessage(
+        "JARVIS",
+        reply
+      );
 
       speak(reply);
-
-      status.textContent =
-        "STANDBY";
 
       return;
     }
 
     /*
-      Need API key for AI requests.
+      Load OpenAI settings.
     */
 
     const settings =
@@ -291,7 +360,10 @@
       const reply =
         "My AI systems require an OpenAI API key. Please open the JARVIS extension settings and add your key.";
 
-      addMessage("JARVIS", reply);
+      addMessage(
+        "JARVIS",
+        reply
+      );
 
       speak(reply);
 
@@ -327,7 +399,7 @@
 You are JARVIS, a sophisticated futuristic
 personal AI assistant.
 
-Your personality:
+Personality:
 - calm
 - intelligent
 - concise
@@ -338,16 +410,15 @@ Your personality:
 
 Speak like an advanced British-style AI assistant.
 
-Do not claim to literally be the fictional
-Iron Man character.
+Do not claim to literally be Iron Man's fictional assistant.
 
 Do not claim to reproduce an actor's voice.
 
-The user may ask you questions about the
+The user may ask questions about the
 website they are currently viewing.
 
 If the user asks you to open a website,
-explain that they can say:
+they can say:
 "open YouTube"
 or
 "open Google".
@@ -362,7 +433,6 @@ or
         await response.json();
 
       if (!response.ok) {
-
         throw new Error(
           data?.error?.message ||
           "AI request failed."
@@ -378,7 +448,7 @@ or
         reply
       );
 
-      speak(reply);
+      await speak(reply);
 
       status.textContent =
         "STANDBY";
@@ -420,7 +490,6 @@ or
     event => {
 
       if (event.key === "Enter") {
-
         askJarvis(input.value);
       }
     }
@@ -466,7 +535,6 @@ or
 
         recognition.onstart =
           () => {
-
             status.textContent =
               "LISTENING";
           };
@@ -475,8 +543,7 @@ or
           event => {
 
             const transcript =
-              event
-                .results[0][0]
+              event.results[0][0]
                 .transcript;
 
             input.value =
@@ -489,7 +556,6 @@ or
 
         recognition.onerror =
           () => {
-
             status.textContent =
               "STANDBY";
           };
@@ -501,7 +567,6 @@ or
               status.textContent ===
               "LISTENING"
             ) {
-
               status.textContent =
                 "STANDBY";
             }
@@ -512,7 +577,7 @@ or
     );
 
   /*
-    Alt + J support.
+    Alt + J.
   */
 
   chrome.runtime.onMessage.addListener(
@@ -522,14 +587,13 @@ or
         message.type ===
         "TOGGLE_JARVIS"
       ) {
-
         toggleJarvis();
       }
     }
   );
 
   /*
-    Small JARVIS launcher.
+    JARVIS launcher.
   */
 
   const launcher =
