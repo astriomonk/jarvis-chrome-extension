@@ -1,0 +1,88 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 330px;
+  min-height: 390px;
+  background: #070b12;
+  color: #eaf7ff;
+  font-family: Arial, sans-serif;
+}
+
+.panel {
+  padding: 22px;
+}
+
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.arc {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid #7de7ff;
+  box-shadow:
+    0 0 14px #28d8ff,
+    inset 0 0 12px #28d8ff;
+}
+
+h1 {
+  margin: 0;
+  letter-spacing: 5px;
+  font-size: 22px;
+}
+
+.brand span {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: #6fa0ae;
+}
+
+label {
+  display: block;
+  font-size: 11px;
+  color: #7fa5b3;
+  margin: 14px 0 6px;
+  letter-spacing: 1px;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #214452;
+  border-radius: 7px;
+  background: #0d1720;
+  color: #eaf7ff;
+  outline: none;
+}
+
+button {
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid #4adfff;
+  border-radius: 7px;
+  background: #0b2832;
+  color: #aef2ff;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #103b48;
+}
+
+.hint {
+  color: #67818b;
+  font-size: 10px;
+  line-height: 1.5;
+  margin-top: 13px;
+}
