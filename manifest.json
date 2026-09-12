@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "JARVIS AI Assistant",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A futuristic AI assistant available on your websites.",
   "permissions": [
     "storage",
     "tabs"
   ],
   "host_permissions": [
-    "https://api.openai.com/*"
+    "https://api.openai.com/*",
+    "https://api.fish.audio/*"
   ],
   "action": {
     "default_title": "Open JARVIS",
@@ -19,9 +20,16 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["jarvis.css"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "jarvis.css"
+      ],
       "run_at": "document_idle"
     }
   ],
