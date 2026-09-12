@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>JARVIS</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+
+  <div class="panel">
+
+    <div class="brand">
+      <div class="arc"></div>
+
+      <div>
+        <h1>JARVIS</h1>
+        <span>AI ASSISTANT</span>
+      </div>
+    </div>
+
+    <label>OpenAI API Key</label>
+
+    <input
+      id="apiKey"
+      type="password"
+      placeholder="sk-..."
+    >
+
+    <label>Model</label>
+
+    <select id="model">
+      <option value="gpt-5.6-luna">
+        GPT-5.6 Luna
+      </option>
+    </select>
+
+    <label>Voice</label>
+
+    <select id="voice"></select>
+
+    <button id="save">
+      SAVE SETTINGS
+    </button>
+
+    <p class="hint">
+      Your API key is stored locally in Chrome.
+    </p>
+
+    <p class="hint">
+      Press <b>Alt + J</b> on a website to open JARVIS.
+    </p>
+
+  </div>
+
+  <script src="popup.js"></script>
+
+</body>
+
+</html>
