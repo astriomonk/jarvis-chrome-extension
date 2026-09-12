@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "JARVIS AI Assistant",
+  "version": "1.0.0",
+  "description": "A futuristic AI assistant available on your websites.",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://api.openai.com/*"
+  ],
+  "action": {
+    "default_title": "Open JARVIS",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["jarvis.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "toggle-jarvis": {
+      "suggested_key": {
+        "default": "Alt+J",
+        "mac": "Alt+J"
+      },
+      "description": "Toggle JARVIS"
+    }
+  }
+}
