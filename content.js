@@ -107,204 +107,200 @@
 
   async function speak(text) {
 
-    const settings = await chrome.storage.local.get([
+  const settings =
+    await chrome.storage.local.get([
       "fishApiKey",
       "fishVoiceId"
     ]);
 
-    /*
-      If a Fish Audio key and voice are configured,
-      use Fish Audio.
-    */
+  /*
+    Try Fish Audio through the background
+    service worker. This avoids webpage CORS.
+  */
 
-    if (settings.fishApiKey && settings.fishVoiceId) {
+  if (
+    settings.fishApiKey &&
+    settings.fishVoiceId
+  ) {
 
-      try {
+    try {
 
-        status.textContent = "SPEAKING";
+      status.textContent =
+        "SPEAKING";
 
-        const response = await fetch(
-          "https://api.fish.audio/v1/tts",
-          {
-            method: "POST",
+      const result =
+        await new Promise((resolve) => {
 
-            headers: {
-              "Authorization":
-                `Bearer ${settings.fishApiKey}`,
+          chrome.runtime.sendMessage(
+            {
+              type: "FISH_TTS",
 
-              "Content-Type":
-                "application/json"
+              text: text,
+
+              apiKey:
+                settings.fishApiKey,
+
+              voiceId:
+                settings.fishVoiceId
             },
 
-            body: JSON.stringify({
-              text: text,
-              reference_id:
-                settings.fishVoiceId,
+            resolve
+          );
 
-              format: "mp3",
+        });
 
-              mp3_bitrate: 128,
 
-              latency: "normal"
-            })
-          }
+      if (!result || !result.ok) {
+
+        throw new Error(
+          result?.error ||
+          "Fish Audio request failed."
         );
 
-        if (!response.ok) {
-          throw new Error(
-            `Fish Audio error ${response.status}`
-          );
-        }
+      }
 
-        const audioBlob =
-          await response.blob();
 
-        const audioUrl =
-          URL.createObjectURL(audioBlob);
+      /*
+        Convert the returned Base64 MP3
+        into playable audio.
+      */
 
-        const audio =
-          new Audio(audioUrl);
+      const binary =
+        atob(result.audioBase64);
 
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          status.textContent = "STANDBY";
-        };
+      const bytes =
+        new Uint8Array(
+          binary.length
+        );
 
-        audio.onerror = () => {
-          URL.revokeObjectURL(audioUrl);
-          status.textContent = "STANDBY";
-        };
 
-        await audio.play();
+      for (
+        let i = 0;
+        i < binary.length;
+        i++
+      ) {
 
-        return;
+        bytes[i] =
+          binary.charCodeAt(i);
 
-      } catch (error) {
+      }
 
-        console.warn(
-          "Fish Audio failed:",
-          error
+
+      const audioBlob =
+        new Blob(
+          [bytes],
+          { type: "audio/mpeg" }
+        );
+
+
+      const audioUrl =
+        URL.createObjectURL(
+          audioBlob
+        );
+
+
+      const audio =
+        new Audio(audioUrl);
+
+
+      audio.onended = () => {
+
+        URL.revokeObjectURL(
+          audioUrl
         );
 
         status.textContent =
-          "VOICE FALLBACK";
-      }
-    }
+          "STANDBY";
 
-    /*
-      Browser voice fallback.
-    */
+      };
 
-    const utterance =
-      new SpeechSynthesisUtterance(text);
 
-    utterance.rate = 0.92;
-    utterance.pitch = 0.82;
-    utterance.volume = 1;
+      audio.onerror = () => {
 
-    const voices =
-      speechSynthesis.getVoices();
-
-    const british =
-      voices.find(
-        voice =>
-          /^en-GB/i.test(voice.lang)
-      );
-
-    if (british) {
-      utterance.voice = british;
-    }
-
-    speechSynthesis.cancel();
-
-    speechSynthesis.speak(utterance);
-
-    utterance.onend = () => {
-      status.textContent = "STANDBY";
-    };
-  }
-
-  function toggleJarvis() {
-
-    root.classList.toggle("open");
-
-    if (root.classList.contains("open")) {
-
-      input.focus();
-
-      if (!messages.children.length) {
-
-        const greeting =
-          "Good evening. All systems are online. How may I assist you?";
-
-        addMessage(
-          "JARVIS",
-          greeting
+        URL.revokeObjectURL(
+          audioUrl
         );
 
-        speak(greeting);
-      }
-    }
-  }
+        status.textContent =
+          "STANDBY";
 
-  function openWebsite(target) {
+      };
 
-    const websites = {
 
-      youtube:
-        "https://www.youtube.com",
+      await audio.play();
 
-      google:
-        "https://www.google.com",
+      return;
 
-      gmail:
-        "https://mail.google.com",
+    } catch (error) {
 
-      github:
-        "https://github.com",
+      console.warn(
+        "Fish Audio failed:",
+        error
+      );
 
-      reddit:
-        "https://www.reddit.com",
+      status.textContent =
+        "VOICE FALLBACK";
 
-      wikipedia:
-        "https://www.wikipedia.org",
-
-      chatgpt:
-        "https://chatgpt.com",
-
-      amazon:
-        "https://www.amazon.com",
-
-      netflix:
-        "https://www.netflix.com",
-
-      spotify:
-        "https://open.spotify.com"
-    };
-
-    const clean =
-      target
-        .toLowerCase()
-        .replace(/\s+/g, "")
-        .replace(".com", "");
-
-    let url =
-      websites[clean];
-
-    if (!url) {
-
-      url = target;
-
-      if (!/^https?:\/\//i.test(url)) {
-        url = "https://" + url;
-      }
     }
 
-    chrome.runtime.sendMessage({
-      type: "OPEN_URL",
-      url
-    });
   }
+
+
+  /*
+    Browser voice fallback.
+  */
+
+  const utterance =
+    new SpeechSynthesisUtterance(
+      text
+    );
+
+  utterance.rate =
+    0.92;
+
+  utterance.pitch =
+    0.82;
+
+  utterance.volume =
+    1;
+
+
+  const voices =
+    speechSynthesis.getVoices();
+
+
+  const british =
+    voices.find(
+      voice =>
+        /^en-GB/i.test(
+          voice.lang
+        )
+    );
+
+
+  if (british) {
+
+    utterance.voice =
+      british;
+
+  }
+
+
+  speechSynthesis.cancel();
+
+  speechSynthesis.speak(
+    utterance
+  );
+
+
+  utterance.onend = () => {
+
+    status.textContent =
+      "STANDBY";
+
+  };
+
+}
 
   async function askJarvis(text) {
 
