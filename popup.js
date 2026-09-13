@@ -1,35 +1,20 @@
 const apiKey = document.getElementById("apiKey");
 const model = document.getElementById("model");
-const voice = document.getElementById("voice");
 
-function loadVoices() {
+const fishApiKey =
+  document.getElementById("fishApiKey");
 
-  const voices = speechSynthesis.getVoices();
+const fishVoiceId =
+  document.getElementById("fishVoiceId");
 
-  voice.innerHTML = "";
-
-  voices
-    .filter(v => /^en(-|_)/i.test(v.lang))
-    .forEach(v => {
-
-      const option = document.createElement("option");
-
-      option.value = v.name;
-
-      option.textContent =
-        `${v.name} — ${v.lang}`;
-
-      voice.appendChild(option);
-
-    });
-}
-
-speechSynthesis.onvoiceschanged = loadVoices;
-
-loadVoices();
 
 chrome.storage.local.get(
-  ["apiKey", "model", "voice"],
+  [
+    "apiKey",
+    "model",
+    "fishApiKey",
+    "fishVoiceId"
+  ],
   (data) => {
 
     if (data.apiKey)
@@ -38,11 +23,15 @@ chrome.storage.local.get(
     if (data.model)
       model.value = data.model;
 
-    if (data.voice)
-      voice.value = data.voice;
+    if (data.fishApiKey)
+      fishApiKey.value = data.fishApiKey;
+
+    if (data.fishVoiceId)
+      fishVoiceId.value = data.fishVoiceId;
 
   }
 );
+
 
 document
   .getElementById("save")
@@ -50,18 +39,27 @@ document
 
     await chrome.storage.local.set({
 
-      apiKey: apiKey.value.trim(),
+      apiKey:
+        apiKey.value.trim(),
 
-      model: model.value,
+      model:
+        model.value,
 
-      voice: voice.value
+      fishApiKey:
+        fishApiKey.value.trim(),
+
+      fishVoiceId:
+        fishVoiceId.value.trim()
 
     });
+
 
     const button =
       document.getElementById("save");
 
-    button.textContent = "SAVED ✓";
+    button.textContent =
+      "SAVED ✓";
+
 
     setTimeout(() => {
 
