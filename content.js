@@ -440,8 +440,10 @@ or
       }
 
       const reply =
-        data.output_text ||
-        "I'm afraid I don't have a response for that.";
+  data.output_text ||
+  data.output?.[0]?.content?.[0]?.text ||
+  data.output?.[0]?.content?.[0]?.value ||
+  "I received the request, but I couldn't read the AI response.";
 
       addMessage(
         "JARVIS",
